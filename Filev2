@@ -1,0 +1,385 @@
+-- Create the ScreenGui
+local ScreenGui = Instance.new("ScreenGui")
+local MainFrame = Instance.new("Frame")
+local TopBar = Instance.new("Frame")
+local BottomBar = Instance.new("Frame")
+local CloseButton = Instance.new("TextButton")
+local LogoImage = Instance.new("ImageLabel")
+local TitleText = Instance.new("TextLabel")
+local ScrollingFrame = Instance.new("ScrollingFrame")
+local UIListLayout = Instance.new("UIListLayout")
+
+-- For Animations
+local animations = {} -- To store animation tracks for toggling
+local buttons = {} -- To store buttons
+
+-- UI Properties
+ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+ScreenGui.ResetOnSpawn = false
+
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
+MainFrame.BackgroundTransparency = 0.2
+MainFrame.Size = UDim2.new(0, 426, 0, 258) -- Wider UI
+MainFrame.Position = UDim2.new(0.6, -200, 0.8, -300)
+MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+
+-- Make the frame draggable (same as before)
+local UIS = game:GetService("UserInputService")
+local dragging
+local dragInput
+local dragStart
+local startPos
+
+local function update(input)
+    local delta = input.Position - dragStart
+    MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+MainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+MainFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UIS.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        update(input)
+    end
+end)
+
+
+-- TopBar
+TopBar.Parent = MainFrame
+TopBar.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
+TopBar.Size = UDim2.new(1, 0, 0, 31)
+
+-- BottomBar
+BottomBar.Parent = MainFrame
+BottomBar.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
+BottomBar.Size = UDim2.new(1, 0, 0, 30)
+BottomBar.Position = UDim2.new(0, 0, 1, -31)
+
+-- Logo Icon
+LogoImage.Parent = TopBar
+LogoImage.BackgroundTransparency = 1
+LogoImage.Image = "rbxassetid://13217634061"
+LogoImage.Size = UDim2.new(0, 30, 0, 30)
+LogoImage.Position = UDim2.new(0, 0, 0, 0)
+
+-- Title Text
+TitleText.Parent = TopBar
+TitleText.BackgroundTransparency = 1
+TitleText.Text = "R6 Animations Menu"
+TitleText.Font = Enum.Font.SourceSansBold
+TitleText.TextSize = 18
+TitleText.TextColor3 = Color3.fromRGB(255, 255, 255)
+TitleText.Size = UDim2.new(1, -60, 1, 0)
+TitleText.Position = UDim2.new(0.25, -75, 0, 0)
+
+-- Close Button
+CloseButton.Parent = TopBar
+CloseButton.BackgroundTransparency = 1
+CloseButton.Text = "X"
+CloseButton.BackgroundColor3 = Color3.fromRGB(255, 255, 0)
+CloseButton.Size = UDim2.new(0, 30, 1, 0)
+CloseButton.Position = UDim2.new(1, -30, 0, 0)
+CloseButton.TextScaled = true
+CloseButton.TextColor3 = Color3.fromRGB(255, 0, 0)
+
+CloseButton.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+-- Scrolling Frame for buttons
+ScrollingFrame.Parent = MainFrame
+ScrollingFrame.Size = UDim2.new(1, -20, 1, -70) -- Adjust to make space for top and bottom bars
+ScrollingFrame.Position = UDim2.new(0, 10, 0, 40)
+ScrollingFrame.BackgroundTransparency = 1
+ScrollingFrame.CanvasSize = UDim2.new(0, 0, 14, 0)
+ScrollingFrame.ScrollBarThickness = 10
+ScrollingFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y -- Adjust canvas size automatically
+
+UIListLayout.Parent = ScrollingFrame
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.Padding = UDim.new(0, 10)
+
+-- Function to create buttons for animations
+local function createAnimationButton(name, animationId)
+    local button = Instance.new("TextButton")
+    button.Parent = ScrollingFrame
+    button.Text = name
+    button.Font = Enum.Font.Cartoon -- Set font to Cartoon
+    button.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+    button.Size = UDim2.new(1, 0, 0, 40)
+    button.TextScaled = true
+    button.TextColor3 = Color3.fromRGB(0, 0, 0)
+    button.BackgroundTransparency = 0.2
+    button.AutoButtonColor = true
+    button.BorderSizePixel = 0
+    button.TextWrapped = true
+
+    -- Button click functionality
+local playing = false
+button.MouseButton1Click:Connect(function()
+    if playing then
+        animations[button]:Stop()
+        playing = false
+        button.BackgroundColor3 = Color3.fromRGB(200, 200, 200) -- Revert to original color when animation stops
+    else
+        local animation = Instance.new("Animation")
+        animation.AnimationId = "rbxassetid://" .. animationId
+        local humanoid = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            local animTrack = humanoid:LoadAnimation(animation)
+            animTrack.Looped = true -- Set the animation to loop
+            animTrack:Play()
+            animations[button] = animTrack
+            playing = true
+            button.BackgroundColor3 = Color3.fromRGB(0, 255, 0) -- Change to brighter color to indicate it's playing
+        end
+    end
+end)
+
+
+    table.insert(buttons, button)
+end
+
+-- Adding buttons (you can add more here)
+createAnimationButton("Barrel Throw", "31020869")
+createAnimationButton("Bike Riding Stance", "189854234")
+createAnimationButton("Guitar Equip", "192906348")
+createAnimationButton("saxtest", "30257281")
+createAnimationButton("Soccer Kick", "28458752")
+createAnimationButton("drink", "29517689")
+createAnimationButton("Goal Dance", "28488254")
+createAnimationButton("Hold", "1119816160")
+createAnimationButton("Pluck", "99198989")
+createAnimationButton("Coasting Pose", "160737288")
+createAnimationButton("Board Kick", "160737244")
+createAnimationButton("Right Turn", "160737408")
+createAnimationButton("Left Turn", "160737355")
+createAnimationButton("Throw From Bag", "30188122")
+createAnimationButton("Wand Cast", "31665427")
+createAnimationButton("Left Slash", "74894663")
+createAnimationButton("Right Slash", "74813494")
+createAnimationButton("Bloxster Motorcycle", "185299570")
+createAnimationButton("Drink Anim", "61914540")
+createAnimationButton("Hyperbike Pose", "214738896")
+createAnimationButton("RoPed Stand Up", "180270832")
+createAnimationButton("Large Gun Hold", "941134851")
+createAnimationButton("Slash", "186934658")
+createAnimationButton("SprayPaint", "78494810")
+createAnimationButton("Bang Sus", "106772613")
+createAnimationButton("Tool Slash", "129967390")
+createAnimationButton("Rocket Throw", "162861977")
+createAnimationButton("Lamp Anim", "71012326")
+createAnimationButton("Plant Anim", "74897796")
+createAnimationButton("Drink Hot Sauce", "29517689")
+createAnimationButton("Staff up", "27432691")
+createAnimationButton("Launch Hand", "33323745")
+createAnimationButton("Tool Lunge", "129967478")
+createAnimationButton("Fast Sword Slash", "41824837")
+createAnimationButton("Pitch Fork", "164025878")
+createAnimationButton("Fire Gun", "123896085")
+createAnimationButton("Staff Spin", "27763939")
+createAnimationButton("something", "123101323")
+createAnimationButton("Reload Gun", "190070243")
+createAnimationButton("Fly Wings", "90828653")
+createAnimationButton("Wave Tool", "160725720")
+createAnimationButton("FlameThrower Hold", "168086975")
+createAnimationButton("flaem", "116690317")
+createAnimationButton("Thrust", "93633158")
+createAnimationButton("StaffPound", "93696468")
+createAnimationButton("holdplz2", "116690317")
+createAnimationButton("Ollie", "160737450")
+createAnimationButton("Whack", "32659706")
+createAnimationButton("Ban Hammer Hold", "48138189")
+createAnimationButton("Cannon", "176177529")
+createAnimationButton("Laser Gun Equip", "182631367")
+createAnimationButton("Light Firethrower", "75322014")
+createAnimationButton("Toss", "75321266")
+createAnimationButton("BeatBox", "45504977")
+createAnimationButton("sword swing jump", "32659699")
+createAnimationButton("twohandswordswing", "32659706")
+createAnimationButton("Floor Crawl", "282574440")
+createAnimationButton("Dab", "183412246")
+createAnimationButton("Super Faint", "181525546")
+createAnimationButton("Dino Walk", "204328711")
+createAnimationButton("Loop Slam", "204295235")
+createAnimationButton("Float Sit", "179224234")
+createAnimationButton("Barrel Roll", "136801964")
+createAnimationButton("Jumping Jacks", "429681631")
+createAnimationButton("Weird Move", "215384594")
+createAnimationButton("Floating Head", "121572214")
+createAnimationButton("Levitate", "313762630")
+createAnimationButton("Hero Jump", "184574340")
+createAnimationButton("Head Throw", "35154961")
+createAnimationButton("Moon Dance", "45834924")
+createAnimationButton("Slap", "204062532")
+createAnimationButton("Crouch", "182724289")
+createAnimationButton("Walking Dance", "429703734")
+createAnimationButton("Spinner", "188632011")
+createAnimationButton("Holding Gun", "182393478")
+createAnimationButton("Grenade Throw", "168160500")
+createAnimationButton("Drive Thru", "168138731")
+createAnimationButton("Flute", "52154760")
+createAnimationButton("TableFlip", "111898867")
+createAnimationButton("Slash Ice", "223624106")
+createAnimationButton("zmobie", "223623937")
+createAnimationButton("Begin Smash", "120735709")
+createAnimationButton("End Smash", "120735762")
+createAnimationButton("Standing", "158821881")
+createAnimationButton("QuickSlash", "49815113")
+createAnimationButton("Sword Equip", "94160581")
+createAnimationButton("Begin Charge", "252394340")
+createAnimationButton("Charge", "252395365")
+createAnimationButton("Release Charge", "252395746")
+createAnimationButton("BDB Idle", "214747217")
+createAnimationButton("BDB Walk", "214748382")
+createAnimationButton("BDB Slash", "214744167")
+createAnimationButton("BDb Staff", "214744412")
+createAnimationButton("Weird Swing", "59085834")
+createAnimationButton("High Slash", "1098424552")
+createAnimationButton("Rock Sword Equip", "317460113")
+createAnimationButton("Bash", "193343548")
+createAnimationButton("StaffSlash", "46756384")
+createAnimationButton("Tank Guitar", "265084639")
+createAnimationButton("RHK2 Kick Ninja", "45738282")
+createAnimationButton("FireCast", "32326240")
+createAnimationButton("Sword Thrust", "32659703")
+createAnimationButton("Grim Walk", "27759788")
+createAnimationButton("Grim Double Hit", "27763344")
+createAnimationButton("Grim Strike", "27761123")
+createAnimationButton("Hold Grim", "27758613")
+createAnimationButton("Gravity Slam", "33169573")
+createAnimationButton("Wand Swing", "35978913")
+createAnimationButton("Shake Hand", "177443776")
+createAnimationButton("Eat", "103822775")
+createAnimationButton("Throw", "209875013")
+createAnimationButton("Holding Gun", "264034706")
+createAnimationButton("Shoot", "97884303")
+createAnimationButton("Reloading Gun", "97885754")
+createAnimationButton("Chop", "186934753")
+createAnimationButton("Slash", "186934658")
+createAnimationButton("Sword Pump Up", "85723345")
+createAnimationButton("Ninja Sword Slash", "45873069")
+createAnimationButton("Shoot Cannon", "182463144")
+createAnimationButton("Button Press", "75322014")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+createAnimationButton("Animation", "1234567890")
+
+
+-- Adjust button layout for more buttons as needed
